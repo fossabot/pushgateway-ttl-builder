@@ -1,8 +1,6 @@
-name: Security scan
+name: Security scan for PRs
 on:
   pull_request:
-  schedule:
-    - cron: '0 2 * * 1-5'
 
 jobs:
   build:
@@ -11,9 +9,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      # We need to build single arch image because docker cannot export multiarch images from buildx currently
+      # and thus we cannot use the image workflows images for scanning
       - name: Build an image from Dockerfile
         run: |
           docker build -t quay.io/k0sproject/pushgateway-ttl:${{ github.sha }} .
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
