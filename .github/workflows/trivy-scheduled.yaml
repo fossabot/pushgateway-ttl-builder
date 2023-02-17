@@ -1,0 +1,29 @@
+name: Scheduled security scan
+on:
+  schedule:
+    - cron: '0 2 * * 1-5'
+
+jobs:
+  build:
+    name: Trivy
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      # Let Trivy pull the image based on the SHA to make sure we’re scanning the image that is “out in the field” rather than something we build locally for each scan.
+      # 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'quay.io/k0sproject/pushgateway-ttl:sha-${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          # Disable to scan all vulnerabilities. If it would be annoying, we can set the severity level.
+          #severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
